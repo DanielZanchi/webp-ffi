@@ -1,16 +1,21 @@
 require 'ffi-compiler/compile_task'
 
-# Detect Homebrew prefix (works for both Intel and ARM Macs)
-brew_prefix = `brew --prefix webp`.chomp
-include_path = "#{brew_prefix}/include"
-lib_path     = "#{brew_prefix}/lib"
+# Try to detect Homebrew (Mac), otherwise fallback to /usr paths (Linux)
+brew_prefix = `which brew >/dev/null 2>&1 && brew --prefix webp`.chomp
+if brew_prefix.empty?
+  include_path = "/usr/include"
+  lib_path     = "/usr/lib"
+else
+  include_path = "#{brew_prefix}/include"
+  lib_path     = "#{brew_prefix}/lib"
+end
 
 FFI::Compiler::CompileTask.new('webp_ffi') do |c|
-  c.have_header?('stdio.h', '/usr/local/include')
+  c.have_header?('stdio.h', '/usr/include')
   c.have_func?('puts')
   c.have_library?('z')
 
-  # webp (use brew paths if available)
+  # webp
   c.have_header?('decode.h', include_path)
   c.have_header?('encode.h', include_path)
   c.have_func?('WebPDecoderConfig')
