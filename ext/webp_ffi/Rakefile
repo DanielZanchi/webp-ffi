@@ -1,15 +1,13 @@
 require 'ffi-compiler/compile_task'
 
-# Detect environment
-if RUBY_PLATFORM.include?("darwin")
-  # macOS (use brew)
+include_path = "/usr/include"
+lib_path     = "/usr/lib/x86_64-linux-gnu"
+
+# On macOS, try Homebrew if available
+if RUBY_PLATFORM.include?("darwin") && system("which brew > /dev/null 2>&1")
   brew_prefix = `brew --prefix webp`.chomp
   include_path = "#{brew_prefix}/include"
   lib_path     = "#{brew_prefix}/lib"
-else
-  # Linux
-  include_path = "/usr/include"
-  lib_path     = "/usr/lib/x86_64-linux-gnu"
 end
 
 FFI::Compiler::CompileTask.new('webp_ffi') do |c|
@@ -18,8 +16,8 @@ FFI::Compiler::CompileTask.new('webp_ffi') do |c|
   c.have_library?('z')
 
   # webp
-  c.have_header?('webp/decode.h', include_path)
-  c.have_header?('webp/encode.h', include_path)
+  c.have_header?('decode.h', include_path)
+  c.have_header?('encode.h', include_path)
   c.have_func?('WebPDecoderConfig')
   c.have_func?('WebPGetInfo')
   c.have_library?('webp', lib_path)
@@ -31,4 +29,6 @@ FFI::Compiler::CompileTask.new('webp_ffi') do |c|
 
   c.ldflags << " -L#{lib_path}"
   c.cflags << " -I#{include_path}"
+  c.ldflags << ENV['LD_FLAGS'] if ENV['LD_FLAGS']
+  c.cflags << ENV['C_FLAGS'] if ENV['C_FLAGS']
 end
