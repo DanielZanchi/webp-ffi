@@ -1,19 +1,30 @@
 require 'ffi-compiler/compile_task'
 
+# Detect Homebrew prefix (works for both Intel and ARM Macs)
+brew_prefix = `brew --prefix webp`.chomp
+include_path = "#{brew_prefix}/include"
+lib_path     = "#{brew_prefix}/lib"
+
 FFI::Compiler::CompileTask.new('webp_ffi') do |c|
   c.have_header?('stdio.h', '/usr/local/include')
   c.have_func?('puts')
   c.have_library?('z')
-  # webp
-  c.have_header?('decode.h', '/usr/local/include')
-  c.have_header?('encode.h', '/usr/local/include')
+
+  # webp (use brew paths if available)
+  c.have_header?('decode.h', include_path)
+  c.have_header?('encode.h', include_path)
   c.have_func?('WebPDecoderConfig')
   c.have_func?('WebPGetInfo')
-  c.have_library?('webp')
-  # libs
+  c.have_library?('webp', lib_path)
+
+  # other libs
   c.have_library?('png')
   c.have_library?('jpeg')
   c.have_library?('tiff')
+
+  # Allow manual overrides
+  c.ldflags << " -L#{lib_path}"
+  c.cflags << " -I#{include_path}"
   c.ldflags << ENV['LD_FLAGS'] if ENV['LD_FLAGS']
   c.cflags << ENV['C_FLAGS'] if ENV['C_FLAGS']
 end
